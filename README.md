@@ -1,56 +1,79 @@
-ifttt-webhook
-=============
-
-A webhook middleware for the ifttt.com service
-
-#How To Use
-1. Change your ifttt.com wordpress server to <http://ifttt.captnemo.in>.
-2. You can use any username/password combination you want. ifttt will accept the authentication irrespective of what details you enter here. These details will be passed along by the webhook as well, so that you may use these as your authentication medium, perhaps.
-3. Create a recipe in ifttt which would post to your "wordpress channel". In the "Tags" field, use the webhook url that you want to use.
-
-![Connecting to ifttt-webhook](http://i.imgur.com/RA0Jb.png "You can type in any username/password you want")
-
-Any username/password combination will be accepted, and passed through to the webhook url. A blank password is considered valid, but ifttt invalidates a blank username.
-
-![Screenshot of a channel](http://i.imgur.com/5FaU1.png "Sample Channel for use as a webhook")
-
-Make sure that the url you specify accepts POST requests. The url is only picked up from the tags field, and all other fields are passed through to the webhook url.
-
-Plugin support
---------------
-
-This fork supports plugins that allow protocol specific modification of the sent webhook payload in order to match whatever format the endpoint wants.
-
-To do this specify a **plugin:xxxx** category, where **xxxx** is the name of the class (extending "Plugin") and also the name of the .php file in the plugins directory. See the plugins/testplugin.php file for example.
+ifttt-wordpress-gateway
+=======================
 
 #How It Works
-ifttt uses wordpress-xmlrpc to communicate with the wordpress blog. We present a fake-xmlrpc interface on the webadress, which causes ifttt to be fooled into thinking of this as a genuine wordpress blog. The only action that ifttt allows for wordpress are posting, which are instead used for powering webhooks. All the other fields (title, description, categories) along with the username/password credentials are passed along by the webhook. Do not use the "Create a photo post" action for wordpress, as ifttt manually adds a `<img>` tag in the description pointing to what url you pass. Its better to pass the url in clear instead (using body/category/title fields).
 
-#Why
-There has been a lot of [call](http://blog.jazzychad.net/2012/08/05/ifttt-needs-webhooks-stat.html) for a ifttt-webhook. I had asked about it pretty early on, but ifttt has yet to create such a channel. It was fun to build and will allow me to hookup ifttt with things like [partychat][pc], [github](gh) and many other awesome services for which ifttt is yet to build a channel. You can build a postmarkapp.com like email-to-webhook service using ifttt alone. Wordpress seems to be the only channel on ifttt that supports custom domains, and hence can be used as a middleware.
+Project forked from the webhook middleware project for the ifttt.com service.
 
-#Payload
-The following information is passed along by the webhook in the raw body of the post request in json encoded format.
+The original project is: <https://github.com/mapkyca/ifttt-webhook>
+
+I've derived from that the ability to receive *fake-post web triggered events* and fire custom web event like:
+  * android push notification
+  * ios push notification
+  * debug emails
+  * other custom web call
+
+I've removed the *fake plugin* support because I'm going to consider only the *fake post body* and ignore the rest of the data that is coming with the triggere event from the IFTTT service.
+
+#How To Use
+
+It can support user authentication by the login-password specified on the Wordpress Channel creation:
+
+![IFTTT Wordpress Channel setup](http://imgur.com/geTEZrr.png?1 "You can type in any username/password you want or a secret combination that is known by the project authentication process (not implemented yet)")
+
+But the authentication is not currently implemented.
+
+Another important change that I've made is:
+
+A simplified of the *IFTTT Recipe Creation*
+-------------------------------------------
+
+If you want to create a Recipe that from a trigger fire a Web event throught this project site you only have to specify the json string that identify the remote action requested without any other information.
+Here is an example:
+
+![IFTTT Wordpress Recipe setup 1](http://imgur.com/hKnfN9J.png?1 "Select Wordpress ad DESTINATION Channel")
+
+![IFTTT Wordpress Recipe setup 2](http://imgur.com/AMI1ixN.png?1 "Pick the create-a-post Action")
+
+![IFTTT Wordpress Recipe setup 2](http://imgur.com/CVlMBui.png?1 "Blank all the field exept for the Body Field")
+
+In the body field you can simply specify a JSON string like this:
 
     {
-    	user: "username specified in ifttt",
-    	password: "password specified in ifttt",
-    	title: "title generated for the recipe in ifttt",
-    	categories:['array','of','categories','passed'],
-    	description:"Body of the blog post as created in ifttt recipe"
+      "action":"my_very_awesome_action",
+      "params":"some useful arguments"
     }
 
-To get the data from the POST request, you can use any of the following:
+With this method you have the ability to implement your custom action in the *xmlrpc.php* file.
 
-    $data = json_decode(file_get_contents('php://input')); #php
-    data = JSON.parse(request.body.read) #ruby-sinatra
+*At last but not least*
 
-Testing
--------
-GitHub has a handy guide for testing webhooks than you might find useful: https://help.github.com/articles/testing-webhooks
+You can use the Fake Wordpress Channel to trig an event!
+--------------------------------------------------------
+
+I've implemented a fake RSS Feed so that the IFTTT service can query for new posts.
+
+In the IFTTT Recipe creation process you now can use the wordpress channel:
+
+![IFTTT Wordpress Triggered Recipe setup 1](http://imgur.com/gftpPn0.png?1 "Select the fake wordpress channel")
+
+![IFTTT Wordpress Triggered Recipe setup 2](http://imgur.com/T8W9RZy.png?1 "Now select the on-new-post event")
+
+An now you can specify whatever triggered event you need!
+
+![IFTTT Wordpress Triggered Recipe setup 3](http://imgur.com/CQa2fKj?1 "Specify the triggered event!")
+
+N.B. this feature is in alpha mode.
+-----------------------------------
+
+I'm already testing this part.
+My intent is to enable a web service to queue "fake-post" and release them to the IFTTT service that will trig your relative recipe...
+
+
+ifttt uses wordpress-xmlrpc to communicate with the wordpress blog. We present a fake-xmlrpc interface on the webadress, which causes ifttt to be fooled into thinking of this as a genuine wordpress blog. The only action that ifttt allows for wordpress are posting, which are instead used for powering webhooks. All the other fields (title, description, categories) along with the username/password credentials are passed along by the webhook. Do not use the "Create a photo post" action for wordpress, as ifttt manually adds a `<img>` tag in the description pointing to what url you pass. Its better to pass the url in clear instead (using body/category/title fields).
 
 #Licence
-Licenced under GPL. Some portions of the code are from wordpress itself. You should probably host this on your own server, instead of using `ifttt.captnemo.in`. I recommend using [phpfog](https://phpfog.com/?a_aid=64682331 "My Affiliate Link") for excellent php hosting.
+Licenced under GPL. Some portions of the code are from wordpress itself. You should probably host this on your own server, instead of using `ifttt.captnemo.in`.
 
 #Custom Use
 Just clone the git repo to some place, and use that as the wordpress installation location in ifttt.com channel settings.
@@ -59,4 +82,5 @@ Just clone the git repo to some place, and use that as the wordpress installatio
 [gh]: https://help.github.com/articles/post-receive-hooks/ "Github Post receive hooks"
 
 #About this Fork
-This is a modification of the original repo <https://github.com/captn3m0/ifttt-webhook> created by Captn3mo, made by Marcus Povey <http://www.marcus-povey.co.uk>.
+This is a modification of the original repo <https://github.com/mapkyca/ifttt-webhook> created by Marcus Povey <http://www.marcus-povey.co.uk>.
+Since that project I've forked my own repo to modify it.
