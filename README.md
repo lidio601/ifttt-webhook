@@ -1,11 +1,10 @@
 ifttt-wordpress-gateway
 =======================
 
-#How It Works
-
 Project forked from the webhook middleware project for the ifttt.com service.
-
 The original project is: <https://github.com/mapkyca/ifttt-webhook>
+
+#How It Works
 
 I've derived from that the ability to receive *fake-post web triggered events* and fire custom web event like:
   * android push notification
