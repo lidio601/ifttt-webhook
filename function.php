@@ -2,12 +2,22 @@
 
 defined('__COMMON__') or die('Direct access not allowed here');
 
-function checkLogin($user,$pass) {
-	if(!$SUPPORT_WORDPRESS_AUTHENTICATION) {
-		return true; //Always authenticated
+if(!$SUPPORT_WORDPRESS_AUTHENTICATION) {
+	function checkLogin($user,$pass) {
+		return true;
 	}
-	// to implement
-	return true;
+} else {
+	require_once(dirname(__FILE__).'/'.'auth.php');
+	
+	if(!function_exists('checkLogin')) {
+		function checkLogin($user,$pass) {
+			if(!$SUPPORT_WORDPRESS_AUTHENTICATION) {
+				return true; //Always authenticated
+			}
+			// to implement
+			return true;
+		}
+	}
 }
 
 /** 

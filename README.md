@@ -22,6 +22,7 @@ I've managed all the code so you only need to work on these files:
 	* action.php
 	* trigger.php
 	* settings.php
+	* auth.php
 
 If you don't need the IFTTT Trigger or IFTTT Action you could only disable that part in the `settings.php` file.
 
