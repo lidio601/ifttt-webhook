@@ -1,5 +1,9 @@
 <?php
 
+defined('__COMMON__') or die('Direct access not allowed here');
+
+require_once(dirname(__FILE__) . '/common.php');
+
 /**
  * Plugin superclass.
  */
@@ -47,6 +51,5 @@ function executePlugin($plugin, $object, $raw) {
     
     return false;
 }
-
 
 ?>
