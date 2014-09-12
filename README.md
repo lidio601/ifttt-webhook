@@ -4,6 +4,8 @@ ifttt-wordpress-gateway
 Project forked from the webhook middleware project for the ifttt.com service.
 The original project is: <https://github.com/mapkyca/ifttt-webhook>
 
+IFTTT uses wordpress-xmlrpc to communicate with the wordpress blog. We present a fake-xmlrpc interface on the website, which causes IFTTT to be fooled into thinking of this as a genuine wordpress blog. The only action that ifttt allows for wordpress are posting, which are instead used for powering webhooks. All the other fields (title, description, categories) along with the username/password credentials are passed along by the webhook. Do not use the "Create a photo post" action for wordpress, as ifttt manually adds a `<img>` tag in the description pointing to what url you pass. Its better to pass the url in clear instead (using body/category/title fields).
+
 #How It Works
 
 I've derived from that the ability to receive *fake-post web triggered events* and fire custom web event like:
@@ -13,6 +15,15 @@ I've derived from that the ability to receive *fake-post web triggered events* a
   * other custom web call
 
 I've removed the *fake plugin* support because I'm going to consider only the *fake post body* and ignore the rest of the data that is coming with the triggere event from the IFTTT service.
+
+#For developers
+
+I've managed all the code so you only need to work on these files:
+	* action.php
+	* trigger.php
+	* settings.php
+
+If you don't need the IFTTT Trigger or IFTTT Action you could only disable that part in the `settings.php` file.
 
 #How To Use
 
@@ -60,16 +71,7 @@ In the IFTTT Recipe creation process you now can use the wordpress channel:
 
 An now you can specify whatever triggered event you need!
 
-![IFTTT Wordpress Triggered Recipe setup 3](http://imgur.com/CQa2fKj?1 "Specify the triggered event!")
-
-N.B. this feature is in alpha mode.
------------------------------------
-
-I'm already testing this part.
-My intent is to enable a web service to queue "fake-post" and release them to the IFTTT service that will trig your relative recipe...
-
-
-ifttt uses wordpress-xmlrpc to communicate with the wordpress blog. We present a fake-xmlrpc interface on the webadress, which causes ifttt to be fooled into thinking of this as a genuine wordpress blog. The only action that ifttt allows for wordpress are posting, which are instead used for powering webhooks. All the other fields (title, description, categories) along with the username/password credentials are passed along by the webhook. Do not use the "Create a photo post" action for wordpress, as ifttt manually adds a `<img>` tag in the description pointing to what url you pass. Its better to pass the url in clear instead (using body/category/title fields).
+![IFTTT Wordpress Triggered Recipe setup 3](http://imgur.com/CQa2fKj.png?1 "Specify the triggered event!")
 
 #Licence
 Licenced under GPL. Some portions of the code are from wordpress itself. You should probably host this on your own server, instead of using `ifttt.captnemo.in`.
