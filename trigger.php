@@ -1,30 +1,17 @@
 <?php
 
+require_once( dirname(__FILE__).'/common.php');
+
 defined('__COMMON__') or die('Direct access not allowed here');
 
-/*
-	Here I can decide whenever to send or not
-	the Trigger event.
-	It's better to manage a queue for the events
-	to trig, to avoid duplicate activated recipes.
-*/
-$something_to_post = true;
+require_once('framework_fabio.php');
 
-$obj = new stdClass;
-
-/*
-	Here you have to setup the fake
-	post body
-*/
-$obj->post_event_id = rand(1,2999);
-$obj->title = "my new post title";
-$obj->date = date('D, d M Y H:i:s O'); 
-$obj->body = '{"action":"new_remote_event"}';
+require_once( dirname(__FILE__).'/settings.gcm.php');
 
 if( defined('DO_TRIGGER') ) { // or failure(400);
-
+	
 	success('<array><data></data></array>');
-
+	
 	/*
   // send a fake blog post to trigger the event
   // "wordpress"::"onNewPost" on IFTTT
@@ -68,6 +55,75 @@ if( defined('DO_TRIGGER') ) { // or failure(400);
 }
 
 if( defined('__WPINDEX__') ) { /// or die('Direct access not allowed here');
+	
+	
+	/*
+		Here I can decide whenever to send or not
+		the Trigger event.
+		It's better to manage a queue for the events
+		to trig, to avoid duplicate activated recipes.
+	*/
+
+	$db->setQuery("
+		SELECT *
+		FROM trigger_queue
+		ORDER BY data ASC
+	");
+
+	$rows = $db->loadObjectList();
+
+	$something_to_post = count($rows) > 0;
+	
+	$posts = array();
+	
+	
+	if($something_to_post) {
+		
+		if( isset($_SERVER) && isset($_SERVER['HTTP_USER_AGENT']) && $_SERVER['HTTP_USER_AGENT']=="feedzirra http://github.com/pauldix/feedzirra/tree/master" ) {
+			
+			$db->setQuery("DELETE FROM trigger_queue");
+			$db->query();
+			
+		} else {
+			
+			// http://php.net/manual/it/datetime.sub.php
+			$date = new DateTime();
+			$date->sub(new DateInterval('P0Y0M0DT1H0M0S'));
+			//echo $date->format('Y-m-d H:i:s') . "\n";
+			
+			$d = $date->format('Y-m-d H:i:s');
+			$db->setQuery("DELETE FROM trigger_queue WHERE Datetime(data) < Datetime('".$d."')");
+			//echo $db->getQuery();
+			$db->query();
+			//print_r($db->loadObjectList());
+			
+		}
+		
+		
+		//echo $db->getQuery();
+		//echo $db->getErrorMsg();
+
+		for($i=0; $i<count($rows); $i++) {
+			
+			$obj = new stdClass;
+
+			/*
+				Here you have to setup the fake
+				post body
+			*/
+			$obj->post_event_id = $rows[$i]->id;
+			$obj->title = $rows[$i]->title;
+			$date = new DateTime($rows[$i]->data);
+			$obj->date = $date->format('D, d M Y H:i:s O'); // $rows[$i]->data
+			$obj->body = $rows[$i]->description;
+			$obj->category = $rows[$i]->category;
+		
+			$posts[] = $obj;
+			
+		}
+		
+	}
+	
 
 	// http://codex.wordpress.org/WordPress_Feeds
 
@@ -80,8 +136,10 @@ if( defined('__WPINDEX__') ) { /// or die('Direct access not allowed here');
 	*/
 
 	__log("RSS Feed Endpoint triggered");
+	
+	header('Content-Type: text/plain');
   
-	echo '<'.'?xml version="1.0" encoding="UTF-8"?'.'>';
+	echo '<'.'?xml version="1.0" encoding="UTF-8"?'.'>'."\n";
 	?>
 <rss version="2.0"
 	xmlns:content="http://purl.org/rss/1.0/modules/content/"
@@ -90,7 +148,7 @@ if( defined('__WPINDEX__') ) { /// or die('Direct access not allowed here');
 	xmlns:atom="http://www.w3.org/2005/Atom"
 	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
 	xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
-  xmlns:rawvoice="http://www.rawvoice.com/rawvoiceRssModule/">
+	xmlns:rawvoice="http://www.rawvoice.com/rawvoiceRssModule/">
 <channel>
 	<title>IFTTT Wordpress WebHook</title>
 	<atom:link href="http://<?php echo $_SERVER['HTTP_HOST']; ?>/feed/" rel="self" type="application/rss+xml" />
@@ -104,24 +162,29 @@ if( defined('__WPINDEX__') ) { /// or die('Direct access not allowed here');
 	<language>it-IT</language>
 	<sy:updatePeriod>hourly</sy:updatePeriod>
 	<sy:updateFrequency>1</sy:updateFrequency>
+	<sy:updateBase>2000-01-01T12:00+00:00</sy:updateBase>
 	<generator>https://bitbucket.org/lidio601/ifttt-wordpress-gateway/</generator>
 	<managingEditor>lidio601</managingEditor>
-	<?php
+<?php
 	if($something_to_post) {
-	?><item>
+		foreach($posts as $obj) {
+	?>	<item>
 		<title><?php echo $obj->title; ?></title>
 		<link>http://<?php echo $_SERVER['HTTP_HOST']; ?>/?postid=<?php echo $obj->post_event_id; ?></link>
 		<comments>http://<?php echo $_SERVER['HTTP_HOST']; ?>/?postid=<?php echo $obj->post_event_id; ?>#comments</comments>
 		<pubDate><?php echo $obj->date; /*Tue, 09 Sep 2014 15:35:01 +0000*/ ?></pubDate>
 		<dc:creator><![CDATA[lidio601 https://bitbucket.org/lidio601/ifttt-wordpress-gateway/]]></dc:creator>
-		<category><![CDATA[DIY]]></category>
+		<category><![CDATA[<?php echo $obj->category; ?>]]></category>
 		<guid isPermaLink="false">http://<?php echo $_SERVER['HTTP_HOST']; ?>/?postid=<?php echo $obj->post_event_id; ?></guid>
 		<description><![CDATA[<?php echo $obj->body; ?>]]></description>
 		<content:encoded><![CDATA[<?php echo $obj->body; ?>]]></content:encoded>
 		<wfw:commentRss>http://<?php echo $_SERVER['HTTP_HOST']; ?>/postid-<?php echo $obj->post_event_id; ?>/feed/</wfw:commentRss>
 		<slash:comments>0</slash:comments>
 	</item>
-<?php } ?>
+<?php 
+		}
+	 }
+?>
 </channel>
 </rss>
 <?php

@@ -44,10 +44,24 @@ if ($obj->url) {
 // we handle the request locally here
 // to send a email for debug purposes
 
+/*
+
 $data = json_decode(file_get_contents('php://input'))."\n\n".print_r($_REQUEST,1).print_r($obj,1);
 
 mail("root","IFTTT Android Push service",$data);
 
-success('<string>' . 200 . '</string>');
+*/
+
+if(isset($obj) && isset($obj->body) && is_object($obj->body) && isset($obj->body->action) ) {
+	
+	require_once( dirname(__FILE__) .'/'.'GCM'.'/'. 'gcm_http_server.php' );
+	
+	sendAndroidNotification($obj->body->action);
+		
+	//success('<string>' . 200 . '</string>');
+	
+} else {
+	failure(400);
+}
 
 ?>

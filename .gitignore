@@ -1,1 +1,7 @@
-/nbproject/
+.gitignore
+GCM/
+trigger.php
+action.php
+settings.php
+settings.gcm.php
+.htdatabase
